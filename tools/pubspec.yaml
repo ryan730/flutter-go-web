@@ -1,0 +1,10 @@
+name: testCom
+publish_to: none
+
+dependencies:
+    args: any
+
+executables:
+  main:
+  creatHtml:
+  handl:
