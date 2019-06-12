@@ -3,6 +3,8 @@ publish_to: none
 
 dependencies:
     args: any
+    dart_inquirer: any
+    console: any
 
 executables:
   main:

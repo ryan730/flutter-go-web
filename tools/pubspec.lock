@@ -8,5 +8,26 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.5.2"
+  console:
+    dependency: transitive
+    description:
+      name: console
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "3.1.0"
+  dart_inquirer:
+    dependency: "direct main"
+    description:
+      name: dart_inquirer
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.0"
+  vector_math:
+    dependency: transitive
+    description:
+      name: vector_math
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.0.8"
 sdks:
-  dart: ">=2.0.0 <3.0.0"
+  dart: ">=2.1.0 <3.0.0"

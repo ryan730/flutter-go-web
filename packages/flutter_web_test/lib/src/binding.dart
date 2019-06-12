@@ -1,12 +1,12 @@
 // Copyright 2016 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// Synced 2019-05-30T14:20:57.794160.
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_web/io.dart';
 import 'package:flutter_web_ui/ui.dart' as ui;
-import 'package:flutter_web_ui/src/engine.dart' as ui;
 
 import 'package:flutter_web/foundation.dart';
 import 'package:flutter_web/gestures.dart';
@@ -238,7 +238,7 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
     Duration additionalTime = const Duration(milliseconds: 1000),
   });
 
-  /// Artificially calls dispatchLocaleChanged on the Widget binding,
+  /// Artificially calls dispatchLocalesChanged on the Widget binding,
   /// then flushes microtasks.
   ///
   /// Passes only one single Locale. Use [setLocales] to pass a full preferred
@@ -248,7 +248,7 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
       assert(inTest);
       final Locale locale =
           Locale(languageCode, countryCode == '' ? null : countryCode);
-      dispatchLocaleChanged(locale);
+      dispatchLocalesChanged(<Locale>[locale]);
     });
   }
 
@@ -257,8 +257,7 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
   Future<void> setLocales(List<Locale> locales) {
     return TestAsyncUtils.guard<void>(() async {
       assert(inTest);
-      // TODO(flutter_web): Sync `dispatchLocalesChanged`.
-      // dispatchLocalesChanged(locales);
+      dispatchLocalesChanged(locales);
     });
   }
 
@@ -505,7 +504,8 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
             FlutterErrorDetails(
               exception: exception,
               stack: _unmangle(stack),
-              context: 'running a test (but after the test had completed)',
+              context: ErrorDescription(
+                  'running a test (but after the test had completed)'),
               library: 'Flutter test framework',
             ),
             forceReport: true);
@@ -539,32 +539,41 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
       // _this_ zone, the test framework would find this zone was the current
       // zone and helpfully throw the error in this zone, causing us to be
       // directly called again.
-      String treeDump;
+      DiagnosticsNode treeDump;
       try {
-        treeDump = renderViewElement?.toStringDeep() ?? '<no tree>';
+        treeDump = renderViewElement?.toDiagnosticsNode() ??
+            DiagnosticsNode.message('<no tree>');
+        // TODO(jacobr): this is a hack to make sure the tree can safely be fully dumped.
+        // Potentially everything is good enough without this case.
+        treeDump.toStringDeep();
       } catch (exception) {
-        treeDump = '<additional error caught while dumping tree: $exception>';
+        treeDump = DiagnosticsNode.message(
+            '<additional error caught while dumping tree: $exception>',
+            level: DiagnosticLevel.error);
       }
-      final StringBuffer expectLine = StringBuffer();
-      final int stackLinesToOmit = reportExpectCall(stack, expectLine);
+      final List<DiagnosticsNode> omittedFrames = <DiagnosticsNode>[];
+      final int stackLinesToOmit = reportExpectCall(stack, omittedFrames);
       FlutterError.reportError(FlutterErrorDetails(
         exception: exception,
         stack: _unmangle(stack),
-        context: 'running a test',
+        context: ErrorDescription('running a test'),
         library: 'Flutter test framework',
         stackFilter: (Iterable<String> frames) {
           return FlutterError.defaultStackFilter(frames.skip(stackLinesToOmit));
         },
-        informationCollector: (StringBuffer information) {
-          if (stackLinesToOmit > 0) information.writeln(expectLine.toString());
+        informationCollector: () sync* {
+          if (stackLinesToOmit > 0) yield* omittedFrames;
           if (showAppDumpInErrors) {
-            information.writeln(
-                'At the time of the failure, the widget tree looked as follows:');
-            information.writeln(
-                '# ${treeDump.split("\n").takeWhile((String s) => s != "").join("\n# ")}');
+            yield DiagnosticsProperty<DiagnosticsNode>(
+                'At the time of the failure, the widget tree looked as follows',
+                treeDump,
+                linePrefix: '# ',
+                style: DiagnosticsTreeStyle.flat);
           }
           if (description.isNotEmpty)
-            information.writeln('The test description was:\n$description');
+            yield DiagnosticsProperty<String>(
+                'The test description was', description,
+                style: DiagnosticsTreeStyle.errorProperty);
         },
       ));
       assert(_parentZone != null);
@@ -694,6 +703,12 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
     FlutterError.onError = _oldExceptionHandler;
     _pendingExceptionDetails = null;
     _parentZone = null;
+    buildOwner.focusManager = FocusManager();
+    assert(
+        !RendererBinding.instance.mouseTracker.mouseIsConnected,
+        'The MouseTracker thinks that there is still a mouse connected, which indicates that a '
+        'test has not removed the mouse pointer which it added. Call removePointer on the '
+        'active mouse gesture to remove the mouse pointer.');
   }
 }
 
@@ -804,7 +819,7 @@ class AutomatedTestWidgetsFlutterBinding extends TestWidgetsFlutterBinding {
           exception: exception,
           stack: stack,
           library: 'Flutter test framework',
-          context: 'while running async test code',
+          context: ErrorDescription('while running async test code'),
         ));
         return null;
       }).whenComplete(() {
@@ -1298,7 +1313,7 @@ class LiveTestWidgetsFlutterBinding extends TestWidgetsFlutterBinding {
         exception: error,
         stack: stack,
         library: 'Flutter test framework',
-        context: 'while running async test code',
+        context: ErrorDescription('while running async test code'),
       ));
       return null;
     } finally {
@@ -1729,6 +1744,9 @@ class _MockHttpResponse extends Stream<List<int>>
   @override
   int get contentLength => -1;
 
+  // @override
+  bool get autoUncompress => true;
+
   @override
   List<Cookie> get cookies => null;
 
@@ -1795,36 +1813,4 @@ class _MockHttpHeaders extends HttpHeaders {
 
   @override
   String value(String name) => null;
-}
-
-/// An asset manager that gives fake empty responses for assets.
-class WebOnlyMockAssetManager implements ui.AssetManager {
-  String defaultAssetsDir = '';
-  String defaultAssetManifest = '{}';
-  String defaultFontManifest = '[]';
-
-  @override
-  String get assetsDir => defaultAssetsDir;
-
-  @override
-  String getAssetUrl(String asset) => '$asset';
-
-  @override
-  Future<ByteData> load(String asset) {
-    if (asset == getAssetUrl('AssetManifest.json')) {
-      return Future.value(_toByteData(utf8.encode(defaultAssetManifest)));
-    }
-    if (asset == getAssetUrl('FontManifest.json')) {
-      return Future.value(_toByteData(utf8.encode(defaultFontManifest)));
-    }
-    throw new ui.AssetManagerException(asset, 404);
-  }
-
-  ByteData _toByteData(List<int> bytes) {
-    final byteData = ByteData(bytes.length);
-    for (var i = 0; i < bytes.length; i++) {
-      byteData.setUint8(i, bytes[i]);
-    }
-    return byteData;
-  }
 }

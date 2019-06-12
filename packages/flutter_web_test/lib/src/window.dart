@@ -1,9 +1,12 @@
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// Synced 2019-05-30T14:20:57.825725.
 
 import 'dart:typed_data' show ByteData;
-import 'package:flutter_web_ui/ui.dart' hide window;
+import 'package:flutter_web_ui/ui.dart'
+    hide window, webOnlyScheduleFrameCallback;
+import 'package:flutter_web_ui/ui.dart' as ui;
 
 import 'package:meta/meta.dart';
 
@@ -54,31 +57,7 @@ class TestWindow implements Window {
   final Window _window;
 
   @override
-  Future<void> webOnlyBack() => _window.webOnlyBack();
-
-  @override
-  set webOnlyLocationStrategy(LocationStrategy strategy) {
-    _window.webOnlyLocationStrategy = strategy;
-  }
-
-  @override
-  set webOnlyRouteName(String routeName) {
-    _window.webOnlyRouteName = routeName;
-  }
-
-  @override
-  VoidCallback get webOnlyScheduleFrameCallback =>
-      _window.webOnlyScheduleFrameCallback;
-  set webOnlyScheduleFrameCallback(VoidCallback callback) {
-    _window.webOnlyScheduleFrameCallback = callback;
-  }
-
-  @override
   double get devicePixelRatio => _devicePixelRatio ?? _window.devicePixelRatio;
-  @override
-  set devicePixelRatio(double devicePixelRatio) {
-    _window.devicePixelRatio = devicePixelRatio;
-  }
 
   double _devicePixelRatio;
 
@@ -97,15 +76,6 @@ class TestWindow implements Window {
   @override
   Size get physicalSize => _physicalSizeTestValue ?? _window.physicalSize;
 
-  @override
-  Size get webOnlyDebugPhysicalSizeOverride =>
-      _window.webOnlyDebugPhysicalSizeOverride;
-
-  @override
-  set webOnlyDebugPhysicalSizeOverride(Size value) {
-    _window.webOnlyDebugPhysicalSizeOverride = value;
-  }
-
   Size _physicalSizeTestValue;
 
   /// Hides the real physical size and reports the given [physicalSizeTestValue] instead.
@@ -121,11 +91,10 @@ class TestWindow implements Window {
   }
 
   @override
-  WindowPadding get viewInsets => _viewInsetsTestValue ?? _window.viewInsets;
+  void setIsolateDebugName(String name) {}
+
   @override
-  set viewInsets(WindowPadding viewInsets) {
-    _window.viewInsets = viewInsets;
-  }
+  WindowPadding get viewInsets => _viewInsetsTestValue ?? _window.viewInsets;
 
   WindowPadding _viewInsetsTestValue;
 
@@ -143,10 +112,6 @@ class TestWindow implements Window {
 
   @override
   WindowPadding get padding => _paddingTestValue ?? _window.padding;
-  @override
-  set padding(WindowPadding padding) {
-    _window.padding = padding;
-  }
 
   WindowPadding _paddingTestValue;
 
@@ -394,6 +359,12 @@ class TestWindow implements Window {
     _window.onPlatformMessage = callback;
   }
 
+  String get initialLifecycleState {
+    return _initialLifecycleState;
+  }
+
+  String _initialLifecycleState;
+
   /// Delete any test value properties that have been set on this [TestWindow]
   /// and return to reporting the real [Window] values for all [Window] properties.
   ///
@@ -413,4 +384,10 @@ class TestWindow implements Window {
     clearTextScaleFactorTestValue();
     clearViewInsetsTestValue();
   }
+}
+
+VoidCallback get webOnlyScheduleFrameCallback =>
+    ui.webOnlyScheduleFrameCallback;
+set webOnlyScheduleFrameCallback(VoidCallback callback) {
+  ui.webOnlyScheduleFrameCallback = callback;
 }

@@ -7,9 +7,7 @@ import 'dart:async';
 import 'package:flutter_web/material.dart';
 import 'package:flutter_web/src/widgets/web_navigator.dart';
 import 'package:flutter_web_ui/src/engine.dart' hide MethodCall;
-import 'package:flutter_web_ui/ui.dart' as ui;
 import 'package:flutter_web_test/flutter_web_test.dart';
-import 'package:flutter_web_test/browser.dart';
 
 const Key tap1 = Key('tap1');
 const Key tap2 = Key('tap2');
@@ -20,7 +18,7 @@ const Key page2 = Key('page2');
 
 /// Click the browser's back button.
 Future<void> browserBack(WidgetTester tester) {
-  return tester.runAsync(() => ui.window.webOnlyBack());
+  return tester.runAsync(() => window.webOnlyBack());
 }
 
 /// Tap a button given its key.
@@ -44,11 +42,11 @@ TestLocationStrategy _strategy;
 void main() {
   group('$BrowserHistory', () {
     setUp(() {
-      ui.window.webOnlyLocationStrategy = _strategy = TestLocationStrategy();
+      window.webOnlyLocationStrategy = _strategy = TestLocationStrategy();
     });
 
     tearDown(() {
-      ui.window.webOnlyLocationStrategy = _strategy = null;
+      window.webOnlyLocationStrategy = _strategy = null;
     });
 
     testWidgets('browser back button pops routes correctly',
@@ -81,11 +79,12 @@ void main() {
       final List<MethodCall> log = <MethodCall>[];
       SystemChannels.platform.setMockMethodCallHandler((MethodCall methodCall) {
         log.add(methodCall);
+        return null;
       });
 
       await tester.pumpWidget(MyApp());
 
-      Matcher systemNavigatorPop =
+      final Matcher systemNavigatorPop =
           isMethodCall('SystemNavigator.pop', arguments: null);
       expect(log, isNot(contains(systemNavigatorPop)));
 
@@ -102,6 +101,7 @@ void main() {
       final List<MethodCall> log = <MethodCall>[];
       SystemChannels.platform.setMockMethodCallHandler((MethodCall methodCall) {
         log.add(methodCall);
+        return null;
       });
 
       // Start on page1.
@@ -127,7 +127,7 @@ void main() {
       expectPage(page1, '/', exists: true);
       expectPage(page2, '/page2', exists: false);
 
-      Matcher systemNavigatorPop =
+      final Matcher systemNavigatorPop =
           isMethodCall('SystemNavigator.pop', arguments: null);
       expect(log, isNot(contains(systemNavigatorPop)));
 
@@ -163,7 +163,7 @@ void main() {
         await _strategy.simulateUserTypingUrl('/page2');
         // This delay is necessary to wait for [BrowserHistory] because it
         // performs a `back` operation which results in a new event loop.
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
       });
       await tester.pumpAndSettle();
 
@@ -181,7 +181,7 @@ void main() {
         await _strategy.simulateUserTypingUrl('/unknown');
         // This delay is necessary to wait for [BrowserHistory] because it
         // performs a `back` operation which results in a new event loop.
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
       });
       await tester.pumpAndSettle();
 
@@ -193,12 +193,15 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorObservers: [WebOnlyNavigatorObserver()],
-      routes: {
-        '/': (_) => MyPage(key: page1, child: Text('Content of home page')),
-        '/page2': (_) => MyPage(key: page2, child: Text('Content of page 2')),
+      navigatorObservers: <NavigatorObserver>[WebOnlyNavigatorObserver()],
+      routes: <String, WidgetBuilder>{
+        '/': (_) =>
+            MyPage(key: page1, child: const Text('Content of home page')),
+        '/page2': (_) =>
+            MyPage(key: page2, child: const Text('Content of page 2')),
       },
     );
   }
@@ -209,25 +212,26 @@ class MyPage extends StatelessWidget {
 
   MyPage({Key key, this.child}) : super(key: key);
 
+  @override
   Widget build(BuildContext context) {
     return Material(
       child: Column(
         children: <Widget>[
           FlatButton(
             key: back,
-            child: Text('< back'),
+            child: const Text('< back'),
             onPressed: () => Navigator.pop(context),
           ),
           Row(
             children: <Widget>[
               RaisedButton(
                 key: tap1,
-                child: Text('Home'),
+                child: const Text('Home'),
                 onPressed: () => Navigator.pushNamed(context, '/'),
               ),
               RaisedButton(
                 key: tap2,
-                child: Text('Page 2'),
+                child: const Text('Page 2'),
                 onPressed: () => Navigator.pushNamed(context, '/page2'),
               ),
             ],

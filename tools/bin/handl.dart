@@ -9,61 +9,37 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'package:dart_inquirer/dart_inquirer.dart';
+import 'package:console/console.dart';
 
-void main() {
-  //printFiles("/Users/ryan/work/ali/github/flutter-study/flutter_web/examples/@ali-flutter-go/lib/widgets/elements");
-  //handleFile("/Users/ryan/work/ali/github/flutter-study/flutter_web/examples/@ali-flutter-go/lib/widgets/elements");
-  printFilesAync("/Users/ryan/work/ali/github/flutter-study/flutter_web/examples/@ali-flutter-go/lib/widgets/elements");
+//const defaultPath = "/Users/ryan/work/ali/github/flutter-study/flutter_web/examples/@ali-flutter-go/lib/widgets/elements";
+const defaultPath = "/Users/ryan/work/ali/github/flutter-project/flutter-go-web/examples/@ali-flutter-go/lib/widgets/themes";
+
+void main() async{
+  qus_ans();
 }
 
-void printFiles(String path){
-  try{
-    var  directory  =   new Directory(path);
-    List<FileSystemEntity> files = directory.listSync();
-    if(files.length == 0) {
-      print("目录为空！");
-      return;
-    }
-    for(var f in files){
-      var bool = FileSystemEntity.isFileSync(f.path);
-      print('1::${bool}::${f.path}::${files.length}');
-      if(!bool){
-        //printFiles(f.path);
-      }else{
-        File file = new File(f.path+'11111');
-        file.createSync();
-//        List<String> lines = new File(f.path).readAsLinesSync();
-//
-//        lines.forEach((l)=>{
-//            if(l.trim().indexOf("import 'package:flutter/material.dart'") >=0){
-//                print('line: ${f.path}')
-//              //file.writeAsBytesSync(utf8.encode('-=-=-=-=-=-=-=-=-=-=-'))
-//            }else {
-//              //file.writeAsBytesSync(utf8.encode(l))
-//            }
-//          }
-//        );
+void qus_ans() async{
+  List<Question> questions = [
+    ConfirmQuestion('confirm', '使用输入的文件目录 ?',preferN: false),
+    InputQuestion('path', '输入文件目录:', skipIf: (Map ctx) => ctx["confirm"] == false),
+    ConfirmQuestion('default', '使用默认文件目录 ?', skipIf: (Map ctx) => ctx["confirm"] == true)
+  ];
+  Prompt prompt = Prompt(questions);
+  Map answers = await prompt.execute();
+  String filePath = answers["path"];
 
+  print(Seperator('='));
+  /// print(answers);
 
-
-//        new File(f.path)
-//            .openRead()
-//            .transform(utf8.decoder)
-//            .transform(new LineSplitter())
-//            .forEach((l) => {
-//              //print('3::${l.trim().indexOf("import 'package:flutter/material.dart'") >=0}')
-//                if(l.trim().indexOf("import 'package:flutter/material.dart'") >=0){
-//                  print('line: ${f.path}');
-//                }else {
-//
-//                }
-//            });
-
-
-      }
-    }
-  }catch(e){
-    print("目录不存在！");
+  if (answers["path"] is String && (answers["path"] as String).isNotEmpty){
+    print("使用输入文件目录:${filePath}");
+    printFilesAync(filePath);
+  }else if(!answers["confirm"] && answers["default"]){
+    print("使用默认文件目录:${defaultPath}");
+    printFilesAync(defaultPath);
+  }else{
+    print(format("{@red}放弃转换!{@normal}"));
   }
 }
 
@@ -72,7 +48,7 @@ void printFilesAync(String path) async{
     var  directory  =   new Directory(path);
     List<FileSystemEntity> files = directory.listSync();
     if(files.length == 0) {
-      print("目录为空！");
+      print(format("{@yellow}目录为空！{@normal}"));
       return;
     }
     //print('2::${files}');
@@ -115,28 +91,6 @@ void printFilesAync(String path) async{
       }
     }
   }catch(e){
-    print("目录不存在！");
-  }
-}
-
-handleFile(String path) async {
-  var  directory  =  await new Directory(path);
-  //List<FileSystemEntity> files = directory.listSync();
-  //列出所有文件，不包括链接和子文件夹
-  Stream<FileSystemEntity> files = directory.list(recursive: false, followLinks: false);
-
-  if(files.length == 0) {
-    print("目录为空！");
-    return;
-  }
-  await for(var f in files) {
-//    var bool = FileSystemEntity.isFileSync(f.path);
-//    print('1::${bool}::${f.path}::${files.length}');
-//    if (!bool) {
-//      //printFiles(f.path);
-//    } else {
-//      File file = new File(f.path + '11111');
-//      await file.create();
-//    }
+    print(format("{@red}目录不存在！{@normal}"));
   }
 }

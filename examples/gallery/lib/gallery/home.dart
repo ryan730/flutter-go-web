@@ -27,6 +27,7 @@ class _FlutterLogo extends StatelessWidget {
           image: DecorationImage(
             image: AssetImage(
               'logos/flutter_white/logo.png',
+              //'logos/paimaiLogo.png',
               //package: _kGalleryAssetsPackage,
             ),
           ),

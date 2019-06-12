@@ -48,6 +48,15 @@ void main() {
   group('checkboxes and radio buttons', () {
     _testCheckboxesAndRadioButtons();
   });
+  group('tappable', () {
+    _testTappable();
+  });
+  group('image', () {
+    _testImage();
+  });
+  group('live region', () {
+    _testLiveRegion();
+  });
 }
 
 void _testEngineSemanticsOwner() {
@@ -828,6 +837,217 @@ void _testCheckboxesAndRadioButtons() {
     semantics().updateSemantics(builder.build());
     expectSemanticsTree('''
 <sem role="radio" aria-checked="false" style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"></sem>
+''');
+
+    semantics().semanticsEnabled = false;
+  });
+}
+
+void _testTappable() {
+  testWidgets('renders an enabled tappable widget',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0 | SemanticsAction.tap.index,
+      flags: 0 |
+          SemanticsFlag.hasEnabledState.index |
+          SemanticsFlag.isEnabled.index |
+          SemanticsFlag.isButton.index,
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+    );
+
+    semantics().updateSemantics(builder.build());
+    expectSemanticsTree('''
+<sem role="button" style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"></sem>
+''');
+
+    semantics().semanticsEnabled = false;
+  });
+
+  testWidgets('renders a disabled tappable widget',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0 | SemanticsAction.tap.index,
+      flags: 0 |
+          SemanticsFlag.hasEnabledState.index |
+          SemanticsFlag.isButton.index,
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+    );
+
+    semantics().updateSemantics(builder.build());
+    expectSemanticsTree('''
+<sem role="button" aria-disabled="true" style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"></sem>
+''');
+
+    semantics().semanticsEnabled = false;
+  });
+}
+
+void _testImage() {
+  testWidgets('renders an image with no child nodes and with a label',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0,
+      flags: 0 | SemanticsFlag.isImage.index,
+      label: 'Test Image Label',
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+    );
+
+    semantics().updateSemantics(builder.build());
+    expectSemanticsTree('''
+<sem role="img" aria-label="Test Image Label" style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"></sem>
+''');
+
+    semantics().semanticsEnabled = false;
+  });
+
+  testWidgets('renders an image with a child node and with a label',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0,
+      flags: 0 | SemanticsFlag.isImage.index,
+      label: 'Test Image Label',
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+      childrenInHitTestOrder: Int32List.fromList([1]),
+      childrenInTraversalOrder: Int32List.fromList([1]),
+    );
+
+    semantics().updateSemantics(builder.build());
+    expectSemanticsTree('''
+<sem style="filter: opacity(0%); color: rgba(0, 0, 0, 0)">
+  <sem-img role="img" aria-label="Test Image Label">
+  </sem-img>
+  <sem-c>
+    <sem></sem>
+  </sem-c>
+</sem>''');
+
+    semantics().semanticsEnabled = false;
+  });
+
+  testWidgets('renders an image with no child nodes without a label',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0,
+      flags: 0 | SemanticsFlag.isImage.index,
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+    );
+
+    semantics().updateSemantics(builder.build());
+    expectSemanticsTree(
+        '''<sem role="img" style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"></sem>''');
+
+    semantics().semanticsEnabled = false;
+  });
+
+  testWidgets('renders an image with a child node and without a label',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0,
+      flags: 0 | SemanticsFlag.isImage.index,
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+      childrenInHitTestOrder: Int32List.fromList([1]),
+      childrenInTraversalOrder: Int32List.fromList([1]),
+    );
+
+    semantics().updateSemantics(builder.build());
+    expectSemanticsTree('''
+<sem style="filter: opacity(0%); color: rgba(0, 0, 0, 0)">
+  <sem-img role="img">
+  </sem-img>
+  <sem-c>
+    <sem></sem>
+  </sem-c>
+</sem>''');
+
+    semantics().semanticsEnabled = false;
+  });
+}
+
+void _testLiveRegion() {
+  testWidgets('renders a live region if there is a label',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0,
+      label: 'This is a snackbar',
+      flags: 0 | SemanticsFlag.isLiveRegion.index,
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+    );
+    semantics().updateSemantics(builder.build());
+
+    expectSemanticsTree('''
+<sem aria-label="This is a snackbar" aria-live="polite" style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"><sem-v>This is a snackbar</sem-v></sem>
+''');
+
+    semantics().semanticsEnabled = false;
+  });
+
+  testWidgets('does not render a live region if there is no label',
+      (WidgetTester tester) async {
+    semantics()
+      ..debugOverrideTimestampFunction(() => _testTime)
+      ..semanticsEnabled = true;
+
+    final ui.SemanticsUpdateBuilder builder = ui.SemanticsUpdateBuilder();
+    builder.updateNode(
+      id: 0,
+      actions: 0,
+      flags: 0 | SemanticsFlag.isLiveRegion.index,
+      transform: Matrix4.identity().storage,
+      rect: ui.Rect.fromLTRB(0, 0, 100, 50),
+    );
+    semantics().updateSemantics(builder.build());
+
+    expectSemanticsTree('''
+<sem style="filter: opacity(0%); color: rgba(0, 0, 0, 0)"></sem>
 ''');
 
     semantics().semanticsEnabled = false;

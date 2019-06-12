@@ -1,3 +1,4 @@
+// Synced 2019-05-30T14:20:57.788350.
 import 'package:flutter_web/material.dart';
 import 'package:flutter_web/rendering.dart';
 import 'package:flutter_web_ui/ui.dart' as ui;
@@ -6,10 +7,9 @@ import 'package:html/parser.dart' as html_package;
 import 'package:html/dom.dart' as html_package;
 import 'package:test/test.dart' as test_package;
 
-import 'src/binding.dart' show WebOnlyMockAssetManager;
-
 export 'dart:async' show Future;
 
+export 'src/accessibility.dart';
 export 'src/binding.dart';
 export 'src/controller.dart';
 export 'src/finders.dart';
@@ -20,38 +20,23 @@ export 'src/test_pointer.dart';
 export 'src/widget_tester.dart';
 export 'src/window.dart';
 
-/// Used to track when the platform is initialized. This ensures the test fonts
-/// are available.
-Future<void> _platformInitializedFuture;
-
-/// If the platform is already initialized (by a previous test), then run the test
-/// body immediately. Otherwise, initialize the platform then run the test.
-Future<dynamic> _ensurePlatformInitializedThenRunTest(dynamic Function() body) {
-  if (_platformInitializedFuture == null) {
-    ui.domRenderer.debugIsInWidgetTest = true;
-
-    // Initializing the platform will ensure that the test font is loaded.
-    _platformInitializedFuture =
-        ui.webOnlyInitializePlatform(assetManager: WebOnlyMockAssetManager());
-  }
-  return _platformInitializedFuture.then((_) => body());
-}
-
 /// Wrapper around Dart's [test_package.test] to ensure that Ahem font is
 /// properly loaded before running tests.
 void test(
-  description,
-  body(), {
+  dynamic description,
+  Function body, {
   String testOn,
   test_package.Timeout timeout,
-  skip,
-  tags,
+  dynamic skip,
+  dynamic tags,
   Map<String, dynamic> onPlatform,
   int retry,
 }) {
   test_package.test(
     description,
-    () => _ensurePlatformInitializedThenRunTest(body),
+    // TODO(flutter_web): remove this by wrapping tests in a test harness that
+    //                    performs this initialization automatically.
+    () => ui.ensureTestPlatformInitializedThenRunTest(body),
     testOn: testOn,
     timeout: timeout,
     skip: skip,
@@ -155,6 +140,9 @@ String canonicalizeHtml(String html,
         break;
       case 'flt-semantics-value':
         replacementTag = 'sem-v';
+        break;
+      case 'flt-semantics-img':
+        replacementTag = 'sem-img';
         break;
       case 'flt-semantics-text-field':
         replacementTag = 'sem-tf';

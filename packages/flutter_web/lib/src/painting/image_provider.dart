@@ -1,11 +1,12 @@
 // Copyright 2015 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// Synced. * Contains Web DELTA *
 
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_web_ui/ui.dart' as ui
-    show instantiateImageCodec, webOnlyInstantiateImageCodecFromUrl, Codec;
+    show webOnlyInstantiateImageCodecFromUrl, Codec;
 import 'package:flutter_web_ui/ui.dart'
     show Size, Locale, TextDirection, hashValues;
 
@@ -262,17 +263,19 @@ abstract class ImageProvider<T> {
           .putIfAbsent(key, () => load(key)));
     }).catchError((dynamic exception, StackTrace stack) async {
       FlutterError.reportError(FlutterErrorDetails(
-          exception: exception,
-          stack: stack,
-          library: 'services library',
-          context: 'while resolving an image',
-          silent: true, // could be a network error or whatnot
-          informationCollector: (StringBuffer information) {
-            information.writeln('Image provider: $this');
-            information.writeln('Image configuration: $configuration');
-            if (obtainedKey != null)
-              information.writeln('Image key: $obtainedKey');
-          }));
+        exception: exception,
+        stack: stack,
+        library: 'services library',
+        context: ErrorDescription('while resolving an image'),
+        silent: true, // could be a network error or whatnot
+        informationCollector: () sync* {
+          yield DiagnosticsProperty<ImageProvider>('Image provider', this);
+          yield DiagnosticsProperty<ImageConfiguration>(
+              'Image configuration', configuration);
+          yield DiagnosticsProperty<T>('Image key', obtainedKey,
+              defaultValue: null);
+        },
+      ));
       return null;
     });
     return stream;
@@ -403,12 +406,13 @@ abstract class AssetBundleImageProvider
   @override
   ImageStreamCompleter load(AssetBundleImageKey key) {
     return MultiFrameImageStreamCompleter(
-        codec: _loadAsync(key),
-        scale: key.scale,
-        informationCollector: (StringBuffer information) {
-          information.writeln('Image provider: $this');
-          information.write('Image key: $key');
-        });
+      codec: _loadAsync(key),
+      scale: key.scale,
+      informationCollector: () sync* {
+        yield DiagnosticsProperty<ImageProvider>('Image provider', this);
+        yield DiagnosticsProperty<AssetBundleImageKey>('Image key', key);
+      },
+    );
   }
 
   /// Fetches the image from the asset bundle, decodes it, and returns a
@@ -419,7 +423,8 @@ abstract class AssetBundleImageProvider
   Future<ui.Codec> _loadAsync(AssetBundleImageKey key) async {
     final ByteData data = await key.bundle.load(key.name);
     if (data == null) throw 'Unable to read data';
-    return await ui.instantiateImageCodec(data.buffer.asUint8List());
+    return await PaintingBinding.instance
+        .instantiateImageCodec(data.buffer.asUint8List());
   }
 }
 
@@ -458,12 +463,13 @@ class NetworkImage extends ImageProvider<NetworkImage> {
   @override
   ImageStreamCompleter load(NetworkImage key) {
     return MultiFrameImageStreamCompleter(
-        codec: _loadAsync(key),
-        scale: key.scale,
-        informationCollector: (StringBuffer information) {
-          information.writeln('Image provider: $this');
-          information.write('Image key: $key');
-        });
+      codec: _loadAsync(key),
+      scale: key.scale,
+      informationCollector: () sync* {
+        yield DiagnosticsProperty<ImageProvider>('Image provider', this);
+        yield DiagnosticsProperty<NetworkImage>('Image key', key);
+      },
+    );
   }
 
   Future<ui.Codec> _loadAsync(NetworkImage key) async {
@@ -527,7 +533,7 @@ class MemoryImage extends ImageProvider<MemoryImage> {
   Future<ui.Codec> _loadAsync(MemoryImage key) {
     assert(key == this);
 
-    return ui.instantiateImageCodec(bytes);
+    return PaintingBinding.instance.instantiateImageCodec(bytes);
   }
 
   @override
