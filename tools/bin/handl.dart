@@ -77,6 +77,8 @@ void printFilesAync(String path) async{
               result += "import 'package:flutter_web/services.dart';\n"
           }else if(l.trim().indexOf('package:flutter/rendering.dart') >=0){
               result += "import 'package:flutter_web/rendering.dart';\n"
+          }else if(l.trim().indexOf('dart:ui') >=0){
+              result += "import 'package:flutter_web_ui/ui.dart';\n"
           }else {
               result += '${l}\n'
           }

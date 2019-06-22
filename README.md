@@ -232,7 +232,7 @@ directory:
 $ webdev serve --auto restart
 ```
 
-You'll notice a similar output to `flutter packages pub run build_runner serve`
+You'll notice a s````imilar output to `flutter packages pub run build_runner serve`
 but now changes to your application code should cause a quick refresh of the
 application on save.
 
